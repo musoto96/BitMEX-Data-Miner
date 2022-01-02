@@ -4,13 +4,13 @@ const Schema = mongoose.Schema;
 
 const tradeSchema = new Schema(
   {
-    timestamp: { type: [String], index: true },
+    timestamp: { type: Date, index: true },
     symbol: String,
     side: String,
     size: Number,
     price: Number,
     tickDirection: String,
-    trdMatchID: { type: [String], index: true },
+    trdMatchID: { type: String, index: true },
     grossValue: Number,
     homeNotional: Number,
     foreignNotional: Number
