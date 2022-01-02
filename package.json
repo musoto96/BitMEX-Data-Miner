@@ -1,0 +1,39 @@
+{
+  "name": "bitmex-macross-trader",
+  "version": "1.0.0",
+  "description": "BitMEX MA-Cross trading bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/musoto96/BitMEX-MACross-Trader.git"
+  },
+  "keywords": [
+    "bot",
+    "trading",
+    "bitmex",
+    "bitcoin",
+    "crypto"
+  ],
+  "author": "Moises Soto",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/musoto96/BitMEX-MACross-Trader/issues"
+  },
+  "homepage": "https://github.com/musoto96/BitMEX-MACross-Trader#readme",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "debug": "4.2",
+    "dotenv": "^10.0.0",
+    "eventemitter2": "^6.4.3",
+    "express": "^4.17.2",
+    "lodash": "^4.17.21",
+    "mongoose": "^6.1.4",
+    "node-fetch": "^2.6.6",
+    "qs": "^6.10.2",
+    "superagent": "^6.1.0",
+    "ws": "^7.3.1"
+  }
+}
