@@ -35,7 +35,7 @@ mongoose.connect(db_uri)
             .then(console.log(`${dup._id} deleted`))
             .catch((err) => console.log(err.message));
         });
-        console.log("Duplicates deleted");
+        console.log(`${data.length} duplicates deleted`);
       } else {
         console.log("No duplicates found");
         mongoose.disconnect();

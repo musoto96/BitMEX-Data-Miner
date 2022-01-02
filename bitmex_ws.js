@@ -7,8 +7,8 @@ require('dotenv').config();
 function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1000) {
   const client = new BitMEXClient({
     testnet: testnet,
-    apiKeyID: process.env.KEY,
-    apiKeySecret: process.env.SECRET,
+    //apiKeyID: process.env.KEY,
+    //apiKeySecret: process.env.SECRET,
     maxTableLen: maxLen,
   });
 
@@ -31,15 +31,15 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
 
       setTimeout( () => {
         mongoose.model('Trade')
-          .find({'trdMatchID': new_trade.trdMatchID}, (err, data) => {
+          .find({'trdMatchID': new_trade.trdMatchID}, (err, matches) => {
             if (err) {
               console.log(`Trade ID ${new_trade.trdMatchID} An error has ocurred:`);
               console.log(err);
 
             } else {
-              if (data.length === 0) {
+              if (matches.length === 0) {
                 new_trade.save()
-                  .then((data) => console.log(`Trade with ID: ${data.trdMatchID} saved to DB.`))
+                  .then((new_trade) => console.log(`Trade with ID: ${new_trade.trdMatchID} saved to DB.`))
                   .catch(console.log);
 
               } else {
