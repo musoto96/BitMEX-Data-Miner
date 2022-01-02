@@ -108,10 +108,10 @@ mongoose.connect(db_uri).then(() => {
                   console.log(err);
                 })
             });
-            console.log(`Loop number: ${page}`);
             console.log(`Data collected: ${data.length}`);
           }
         );
+        console.log(`Loop number: ${i}`);
       }, 5000 * page);
     })(page++)
   }

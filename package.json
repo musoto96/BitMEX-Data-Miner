@@ -1,14 +1,14 @@
 {
-  "name": "bitmex-macross-trader",
+  "name": "bitmex-data-miner",
   "version": "1.0.0",
-  "description": "BitMEX MA-Cross trading bot",
+  "description": "Extracts trades from BitMEX and writes them to MongoDB",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/musoto96/BitMEX-MACross-Trader.git"
+    "url": "git+https://github.com/musoto96/BitMEX-Data-Miner.git"
   },
   "keywords": [
     "bot",
@@ -18,11 +18,11 @@
     "crypto"
   ],
   "author": "Moises Soto",
-  "license": "MIT",
+  "license": "",
   "bugs": {
-    "url": "https://github.com/musoto96/BitMEX-MACross-Trader/issues"
+    "url": "https://github.com/musoto96/BitMEX-Data-Miner/issues"
   },
-  "homepage": "https://github.com/musoto96/BitMEX-MACross-Trader#readme",
+  "homepage": "https://github.com/musoto96/BitMEX-Data-Miner#readme",
   "dependencies": {
     "crypto": "^1.0.1",
     "debug": "4.2",
