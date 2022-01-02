@@ -27,7 +27,9 @@ mongoose.connect(db_uri)
       $sort: {
         count: -1
       }
-    }]).then((data) => {
+    }],
+      { "allowDiskUse" : true }
+    ).then((data) => {
       console.log(`Duplicates found: ${data.length}`);
       if (data.length > 0) {
         data.forEach((dup) => {

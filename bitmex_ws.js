@@ -46,7 +46,7 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
                 console.log(`Trade ID ${new_trade.trdMatchID} already exists. Skipping ... `);
               }
             }
-          });
+          }).allowDiskUse();
       }, 1 + Math.random());
     });
 
