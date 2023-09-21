@@ -1,5 +1,5 @@
-const BitMEXClient = require('./BitMEX_client');
 const mongoose = require('mongoose');
+const BitMEXClient = require('./BitMEX_client');
 const Trade = require('./models/Trade');
 require('dotenv').config();
 mongoose.set('strictQuery', false);
@@ -7,7 +7,7 @@ mongoose.set('strictQuery', false);
 //
 // TODO: 
 //  1. Implement logging.
-//  2. Websocket Hearbeat check.
+//  2. Websocket Heartbeat check.
 //  3. Error handling.
 // 
 
@@ -18,7 +18,7 @@ const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : proc
 const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
 
 //
-// Connects to bitmex websocket and subscribes to a stream
+// Connects to BitMEX websocket and subscribes to a stream.
 // See 'options' reference in README
 //
 function connectToBitMEX(stream='trade', maxLen=1000) {
@@ -49,9 +49,7 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
       saveToDB("Trade", 'trdMatchID', newTrade);
     });
 
-    //console.log('\nPrevious data: ', oldData, '\n');
     //console.log('Stream data: ', streamData);
-    //console.log('New data: ', newData);
     console.log('New data length: ', newData.length);
 
     oldData = args[0]
