@@ -4,12 +4,23 @@ const Trade = require('./models/Trade');
 require('dotenv').config();
 mongoose.set('strictQuery', false);
 
-// Params
+//
+// TODO: 
+//  1. Implement logging.
+//  2. Websocket Hearbeat check.
+//  3. Error handling.
+// 
+
+// Environement
 const testnet = (process.env.TESTNET === 'true');
 const symbol = process.env.SYMBOL;
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
+const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
 
+//
+// Connects to bitmex websocket and subscribes to a stream
 // See 'options' reference in README
+//
 function connectToBitMEX(stream='trade', maxLen=1000) {
   const client = new BitMEXClient({
     testnet: testnet,
@@ -33,37 +44,10 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
       return !oldData.some((oldTrade) => oldTrade.trdMatchID === trade.trdMatchID);
     });
 
-    
     newData.forEach((trade) => {
       const newTrade = new Trade(trade);
-      saveToDB(Trade, 'trdMatchID', newTrade);
-    }
-
-    /*
-    newData.forEach((trade) => {
-      const new_trade = new Trade(trade);
-
-      setTimeout( () => {
-        mongoose.model('Trade')
-          .find({'trdMatchID': new_trade.trdMatchID}, (err, matches) => {
-            if (err) {
-              console.log(`Trade ID ${new_trade.trdMatchID} An error has ocurred:`);
-              console.log(err);
-
-            } else {
-              if (matches.length === 0) {
-                new_trade.save()
-                  .then((new_trade) => console.log(`Trade with ID: ${new_trade.trdMatchID} saved to DB.`))
-                  .catch(console.log);
-
-              } else {
-                console.log(`Trade ID ${new_trade.trdMatchID} already exists. Skipping ... `);
-              }
-            }
-          }).allowDiskUse();
-      }, 1 + Math.random());
-    }*/
-    );
+      saveToDB("Trade", 'trdMatchID', newTrade);
+    });
 
     //console.log('\nPrevious data: ', oldData, '\n');
     //console.log('Stream data: ', streamData);
@@ -74,33 +58,57 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   });
 }
 
-function saveToDB(mongoModel, modelID, instance) {
-  setTimeout( () => {
-    mongoose.model(`${mongoModel}`)
-      .find({id: instance.modelID}, (err, matches) => {
-        if (err) {
-          console.log(`Object ID ${instance.modelID} An error has ocurred:`);
-          console.log(err);
+// 
+// Saves data into the configured MONGODB database
+//   The function takes:
+//      
+//      Parameter    Type
+//      -----------  ---------
+//       modelName    <string>
+//       modelID      <string>
+//       instance     <modelName>
+// 
+//  It will check database for matching modelID 
+//    if none are found the data is saved, 
+//    if there is a match it is skipped.
+// 
+function saveToDB(modelName, modelID, instance) {
+  // Create query in advance
+  //   it will not work to put 
+  //   {modelID: instance[modelID]} inside find method.
+  const query = {};
+  query[modelID] = instance[modelID];
 
+  setTimeout( () => {
+    mongoose.model(modelName)
+      .find(query, (err, matches) => {
+        if (err) {
+          console.log(`Object ID ${instance[modelID]} An error has ocurred:`);
+          console.log(err);
         } else {
           if (matches.length === 0) {
             instance.save()
-              .then((instance) => console.log(`Object with ID: ${instance.modelID} saved to DB.`))
+              .then((instance) => console.log(`Object with ID: ${instance[modelID]} saved to DB.`))
               .catch(console.log);
 
           } else {
-            console.log(`Object with ID ${inst.modelID} already exists. Skipping ... `);
+            console.log(err);
+            console.log(`Object with ID ${instance[modelID]} already exists. Skipping ... `);
           }
         }
       }).allowDiskUse();
   }, 1 + Math.random());
 }
 
-db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
-
-// Connect to database. Then run Web Socket function to save data.
-// Connection will drop unexpectedly, so run several nodes in parallel, 
-//  the fucntio checks for trade ID to avoid duplication.
+// 
+// Connects to database and then runs connectToBitMEX 
+//   function to start save data, ws connection will drop unexpectedly
+// 
+//   TODO: Implement heartbeat
+// 
+//   In the meantime, run several nodes in parallel to minimize/avoid data loss,
+//   the saveToDB function will check for ID to avoid duplication.
+// 
 mongoose.connect(db_uri)
   .then(() => { 
     connectToBitMEX()
