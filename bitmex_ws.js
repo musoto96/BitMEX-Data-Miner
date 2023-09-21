@@ -2,9 +2,15 @@ const BitMEXClient = require('./BitMEX_client');
 const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
 require('dotenv').config();
+mongoose.set('strictQuery', false);
+
+// Params
+const testnet = (process.env.TESTNET === 'true');
+const symbol = process.env.SYMBOL;
+const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
 
 // See 'options' reference in README
-function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1000) {
+function connectToBitMEX(stream='trade', maxLen=1000) {
   const client = new BitMEXClient({
     testnet: testnet,
     //apiKeyID: process.env.KEY,
@@ -19,6 +25,7 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
   client.on('initialize', () => console.log('Client initialized, data is flowing.'));
 
   let oldData = [];
+
   client.addStream(symbol, stream, (...args) => { 
     const streamData = args[0]
 
@@ -26,6 +33,13 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
       return !oldData.some((oldTrade) => oldTrade.trdMatchID === trade.trdMatchID);
     });
 
+    
+    newData.forEach((trade) => {
+      const newTrade = new Trade(trade);
+      saveToDB(Trade, 'trdMatchID', newTrade);
+    }
+
+    /*
     newData.forEach((trade) => {
       const new_trade = new Trade(trade);
 
@@ -48,7 +62,8 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
             }
           }).allowDiskUse();
       }, 1 + Math.random());
-    });
+    }*/
+    );
 
     //console.log('\nPrevious data: ', oldData, '\n');
     //console.log('Stream data: ', streamData);
@@ -59,12 +74,37 @@ function connectToBitMEX(testnet=true, symbol='XBTUSD', stream='trade', maxLen=1
   });
 }
 
-db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+function saveToDB(mongoModel, modelID, instance) {
+  setTimeout( () => {
+    mongoose.model(`${mongoModel}`)
+      .find({id: instance.modelID}, (err, matches) => {
+        if (err) {
+          console.log(`Object ID ${instance.modelID} An error has ocurred:`);
+          console.log(err);
+
+        } else {
+          if (matches.length === 0) {
+            instance.save()
+              .then((instance) => console.log(`Object with ID: ${instance.modelID} saved to DB.`))
+              .catch(console.log);
+
+          } else {
+            console.log(`Object with ID ${inst.modelID} already exists. Skipping ... `);
+          }
+        }
+      }).allowDiskUse();
+  }, 1 + Math.random());
+}
+
+db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+
+// Connect to database. Then run Web Socket function to save data.
+// Connection will drop unexpectedly, so run several nodes in parallel, 
+//  the fucntio checks for trade ID to avoid duplication.
 mongoose.connect(db_uri)
   .then(() => { 
-    connectToBitMEX(testnet=false)
+    connectToBitMEX()
   })
   .catch((err) => {
     console.log(err);
   });
-

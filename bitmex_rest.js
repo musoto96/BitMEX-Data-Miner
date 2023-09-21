@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
 require('dotenv').config()
 
+// Params
 const apiKey = process.env.PKEY;
 const apiSecret = process.env.PSECRET;
 

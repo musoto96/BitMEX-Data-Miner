@@ -2,3 +2,6 @@ node_modules/*
 github_connectors/*
 lib/*
 test_func.js
+tags
+*.swp
+gcloud-docker-compose.y*ml
