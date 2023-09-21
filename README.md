@@ -1,7 +1,7 @@
 
 # BitMEX-Data-Miner
 
-To run the application (nodeJS + MongoDB) on docker
+To run the application (_nodeJS_ + _MongoDB_) on docker
 ```
 docker compose up --build
 ```
@@ -19,7 +19,7 @@ Start the database and web gui with
 docker compose up -f mongo-docker-compose.yml up --build
 ```
 
-This will bring up a containers for _MongoDB_ and _Mongo-Express_, and now running the websocket with nodeJS will connect to this MongoDB container.
+This will bring up a containers for _MongoDB_ and _Mongo-Express_, and now running the websocket with _nodeJS_ will connect to this _MongoDB_ container.
 ```
 npm install
 node bitmex_ws.js

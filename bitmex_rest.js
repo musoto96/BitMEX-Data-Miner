@@ -5,11 +5,19 @@ const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
 require('dotenv').config()
 
-// Params
+// Environement
+const testnet = (process.env.TESTNET === 'true');
+const symbol = process.env.SYMBOL;
+const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
+const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+// Required for private endpoints
 const apiKey = process.env.PKEY;
 const apiSecret = process.env.PSECRET;
 
-function makeRequest(testnet, verb, endpoint, data = {}) {
+//
+// Create and make a request 
+//
+function makeRequest(verb, endpoint, data = {}) {
   console.log("Request made");
   const apiRoot = '/api/v1/';
   const expires = Math.round(new Date().getTime() / 1000) + 60; // 1 min in the future
@@ -54,16 +62,17 @@ function makeRequest(testnet, verb, endpoint, data = {}) {
   );
 }
 
-
-async function extract(testnet, method, endpoint, symbol, data={}) {
+/*
+async function extract(method, endpoint, symbol, data={}) {
   try {
     const result = await makeRequest(
-      testnet, 
       method, 
       endpoint, 
       { ...data, 
         filter: { symbol: symbol }, 
+*/
         /*columns: ['currentQty', 'avgEntryPrice'],*/
+/*
       });
     return result;
   } catch (err) {
@@ -71,21 +80,17 @@ async function extract(testnet, method, endpoint, symbol, data={}) {
     throw (err);
   };
 };
+*/
 
-
-const bsize = 1000;
-const iterations = 100000;
-const offset = 1240;
-let page = 0;
-
-db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
-mongoose.connect(db_uri).then(() => {
-  console.log('Connected to mongoDB');
-
-  while (page < iterations) {
+// 
+// 
+// 
+function extract(method, endpoint, pageSize, pages, offset) {
+  let page = 0;
+  while (page < pages) {
     ((i) => {
       setTimeout(() => {
-        extract(testnet=false, method='GET', endpoint='trade', symbol='XBTUSD', data={count: bsize, start: i * bsize + offset, reverse: true})
+        makeRequest(method, endpoint, data={ count: pageSize, start: i * pageSize + offset, reverse: true })
           .then((data) => {
             if (data.length > 0) {
               data.forEach((trade) => {
@@ -123,6 +128,56 @@ mongoose.connect(db_uri).then(() => {
       }, 5000 * (i - offset));
     })(offset + page++)
   }
+}
+
+
+mongoose.connect(db_uri).then(() => {
+  console.log('Connected to mongoDB');
+  extract('GET', 'trade', 1000, 100000, 0) {
+
+/*
+  while (page < iterations) {
+    ((i) => {
+      setTimeout(() => {
+        makeRequest(method='GET', endpoint='trade', symbol='XBTUSD', data={count: bsize, start: i * bsize + offset, reverse: true})
+          .then((data) => {
+            if (data.length > 0) {
+              data.forEach((trade) => {
+
+                const new_trade = new Trade(trade);
+
+                mongoose.model("Trade").find({ "trdMatchID": new_trade.trdMatchID })
+                  .allowDiskUse()
+                  .exec()
+                  .then((matches) => {
+                    if (matches.length === 0) {
+                      
+                      new_trade.save()
+                        .then(
+                          console.log(`Trade with ID: ${new_trade.trdMatchID} saved to DB.`))
+                        .catch(console.log);
+
+                    } else {
+                      console.log(`Trade with ID: ${new_trade.trdMatchID} already exists. Skipping ...`);
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                  })
+              });
+            } else {
+              console.log(data);
+              console.log('Empty response');
+              page--
+            }
+            console.log(`Data collected: ${data.length}`);
+          }
+        );
+        console.log(`Loop number: ${i}`);
+      }, 5000 * (i - offset));
+    })(offset + page++)
+  }
+*/
 }).catch((err) => {
   console.log(err);
   mongoose.disconnect();
