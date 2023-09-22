@@ -29,7 +29,7 @@ node bitmex_ws.js
 There are three main scripts
 
 
-| First Header        | Second Header |
+| Script name         | What it does  |
 | -------------       | ------------- |
 | `bitmex_ws.js`      | Connects to BitMEX websocket and saves incomming data.  |
 | `bitmex_rest.js`    |  Makes requests to BitMEX REST API every 5 seconds and saves the data. It will request `page` number of pages of `pageSize` data points each.  |
