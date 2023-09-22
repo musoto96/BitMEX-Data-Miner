@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
 require('dotenv').config();
 
-
-// Environement
+// Environment
 const testnet = (process.env.TESTNET === 'true');
 const symbol = process.env.SYMBOL;
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
@@ -54,6 +53,10 @@ function removeDuplicates(modelName, modelID) {
     });
 }
 
+// 
+// Connects to database and then runs removeDuplicates 
+//   function.
+// 
 mongoose.connect(db_uri)
   .then(() => { 
     console.log("Connected to MongoDB");

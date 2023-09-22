@@ -11,7 +11,7 @@ mongoose.set('strictQuery', false);
 //  3. Error handling.
 // 
 
-// Environement
+// Environment
 const testnet = (process.env.TESTNET === 'true');
 const symbol = process.env.SYMBOL;
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
@@ -58,7 +58,8 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
 
 // 
 // Saves data into the configured MONGODB database
-//   The function takes:
+//
+//   The function takes the following arguments
 //      
 //      Parameter    Type
 //      -----------  ---------
@@ -88,7 +89,6 @@ function saveToDB(modelName, modelID, instance) {
             instance.save()
               .then((instance) => console.log(`Object with ID: ${instance[modelID]} saved to DB.`))
               .catch(console.log);
-
           } else {
             console.log(err);
             console.log(`Object with ID ${instance[modelID]} already exists. Skipping ... `);
@@ -100,12 +100,17 @@ function saveToDB(modelName, modelID, instance) {
 
 // 
 // Connects to database and then runs connectToBitMEX 
-//   function to start save data, ws connection will drop unexpectedly
+//   function to start saving data from websocket,
+//   the connection will drop unexpectedly
 // 
 //   TODO: Implement heartbeat
 // 
 //   In the meantime, run several nodes in parallel to minimize/avoid data loss,
 //   the saveToDB function will check for ID to avoid duplication.
+// 
+// You can run this in parallel to bitmex_ws.js
+// This will save new incomming data using websocket and 
+//   past data from REST API
 // 
 mongoose.connect(db_uri)
   .then(() => { 

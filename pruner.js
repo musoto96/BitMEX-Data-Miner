@@ -1,10 +1,27 @@
 const fs = require('fs');
 const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
-
 require('dotenv').config();
 
-db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+// 
+// 
+// This script is meant to handle incremental updates to a central database.
+// At the moment it cuts off data older than 24h and dumps it under ./dump
+// 
+// This data is to be committed to a central repository or database, 
+//   for later exploitation
+// 
+// This script should be set to run periodiacally on a scheduler.
+// 
+// 
+// ## MOSTLY UNFINISHED ##
+// 
+// 
+
+// Environment
+const symbol = process.env.SYMBOL;
+const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
+const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
 
 /*
 async function getLatest() {

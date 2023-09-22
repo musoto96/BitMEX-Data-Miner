@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const Trade = require('./models/Trade');
 require('dotenv').config()
 
-// Environement
+// Environment
 const testnet = (process.env.TESTNET === 'true');
 const symbol = process.env.SYMBOL;
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
@@ -63,33 +63,58 @@ function makeRequest(verb, endpoint, data = {}) {
 }
 
 // 
+// This function will extract data from REST api
+//   tt has a timeout of 5 seconds in between requests to be 
+//   well below rate limit. 
+//
+//   For more info on rate limits visit BitMEX REST API documentation.
+// 
+//   The function takes the following arguments
+// 
+//      Parameter    Type
+//      -----------  ---------
+//       modelName    <string>
+//       modelID      <string>
+//       method       <string>
+//       endpoint     <string>
+//       symbol       <string>
+//       pageSize     <numeric>
+//       pages        <numeric>
+//       offset       <numeric>
+// 
+//  It will check database for matching modelID 
+//    if none are found the data is saved, 
+//    if there is a match it is skipped.
 // 
 // 
-function extract(method, endpoint, pageSize, pages, offset) {
+function extract(modelName, modelID, method, endpoint, symbol, pageSize, pages, offset) {
   let page = 0;
+  const Model = mongoose.model(modelName);
   while (page < pages) {
     ((i) => {
       setTimeout(() => {
-        makeRequest(method, endpoint, data={ count: pageSize, start: i * pageSize + offset, reverse: true })
+        makeRequest(method, endpoint, data={ symbol: symbol, count: pageSize, start: i * pageSize + offset, reverse: true })
           .then((data) => {
             if (data.length > 0) {
               data.forEach((trade) => {
 
-                const new_trade = new Trade(trade);
+                const newTrade = new Model(trade);
+                const query = {};
+                query[modelID] = newTrade[modelID];
 
-                mongoose.model("Trade").find({ "trdMatchID": new_trade.trdMatchID })
+                mongoose.model(modelName).find(query)
                   .allowDiskUse()
                   .exec()
                   .then((matches) => {
                     if (matches.length === 0) {
                       
-                      new_trade.save()
+                      newTrade.save()
                         .then(
-                          console.log(`Trade with ID: ${new_trade.trdMatchID} saved to DB.`))
+                          console.log(`Object with ID: ${newTrade[modelID]} saved to DB.`))
                         .catch(console.log);
 
                     } else {
-                      console.log(`Trade with ID: ${new_trade.trdMatchID} already exists. Skipping ...`);
+                      console.log(`Object with ID: ${newTrade[modelID]} already exists. Skipping ...`);
                     }
                   })
                   .catch((err) => {
@@ -110,10 +135,17 @@ function extract(method, endpoint, pageSize, pages, offset) {
   }
 }
 
-
+// 
+// Connects to database and then runs extract 
+//   function to start saving data from REST API.
+// 
+// You can run this in parallel to bitmex_ws.js
+// This will save new incomming data using websocket and 
+//   past data from REST API
+// 
 mongoose.connect(db_uri).then(() => {
   console.log('Connected to mongoDB');
-  extract('GET', 'trade', 1000, 100000, 0);
+  extract('Trade', 'trdMatchID', 'GET', 'trade', symbol, 1000, 1000, 0);
 }).catch((err) => {
   console.log(err);
   mongoose.disconnect();
