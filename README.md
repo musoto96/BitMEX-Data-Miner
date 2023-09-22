@@ -28,9 +28,13 @@ node bitmex_ws.js
 ### Basic usage
 There are three main scripts
 
- - `bitmex_ws.js` &nbsp;&nbsp;&nbsp;&nbsp; Connects to BitMEX websocket and saves incomming data.
- - `bitmex_rest.js` &nbsp;&nbsp;&nbsp;&nbsp; Makes requests to BitMEX REST API every 5 seconds and saves the data. It will request `page` number of pages of `pageSize` data points each. 
- - `cleaner.js` &nbsp;&nbsp;&nbsp;&nbsp; This script is meant to be run periodically, it will remove any duplicates from database, it is specially usefull if running both `bitmex_ws.js` and `bitmex_rest.js` in parallel.
+
+| First Header        | Second Header |
+| -------------       | ------------- |
+| `bitmex_ws.js`      | Connects to BitMEX websocket and saves incomming data.  |
+| `bitmex_rest.js`    |  Makes requests to BitMEX REST API every 5 seconds and saves the data. It will request `page` number of pages of `pageSize` data points each.  |
+|  `cleaner.js`       |  This script is meant to be run periodically, it will remove any duplicates from database, it is specially usefull if running both `bitmex_ws.js` and `bitmex_rest.js` in parallel.
+
 
 For some more information consult the inline comments inside the scripts.
 
