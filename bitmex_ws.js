@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-const BitMEXClient = require('./BitMEX_client');
-const Trade = require('./models/Trade');
+const BitMEXClient = require('./BitMEX_client.js');
+const { Heartbeat } = require('./heartbeat.js');
+const Trade = require('./models/Trade.js');
 require('dotenv').config();
 mongoose.set('strictQuery', false);
 
@@ -29,14 +30,23 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
     maxTableLen: maxLen,
   });
 
+  const heartbeat = new Heartbeat(client);
+
   // handle errors here. If no 'error' callback is attached. errors will crash the client.
-  client.on('error', console.error);
+  client.on('error', function() {
+    console.log('Reconnecting now ...');
+    heartbeat.client.socket.reconnect();
+  });
   client.on('open', () => console.log('Connection opened.'));
   client.on('close', () => console.log('Connection closed.'));
   client.on('initialize', () => console.log('Client initialized, data is flowing.'));
 
-  let oldData = [];
+  // Save trades to mongo
+  saveTradeStream(client, stream);
+}
 
+function saveTradeStream(client, stream) {
+  let oldData = [];
   client.addStream(symbol, stream, (...args) => { 
     const streamData = args[0]
 
@@ -119,3 +129,4 @@ mongoose.connect(db_uri)
   .catch((err) => {
     console.log(err);
   });
+//connectToBitMEX()

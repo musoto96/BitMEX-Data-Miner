@@ -2,9 +2,9 @@ const _ = require('lodash');
 const EventEmitter = require('eventemitter2').EventEmitter2;
 const util = require('util');
 const debug = require('debug')('BitMEX:realtime-api');
-const createSocket = require('./lib/createSocket');
-const deltaParser = require('./lib/deltaParser');
-const getStreams = require('./lib/getStreams');
+const createSocket = require('./lib/createSocket.js');
+const deltaParser = require('./lib/deltaParser.js');
+const getStreams = require('./lib/getStreams.js');
 
 const DEFAULT_MAX_TABLE_LEN = 10000;
 
