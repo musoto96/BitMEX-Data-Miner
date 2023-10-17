@@ -7,9 +7,9 @@ mongoose.set('strictQuery', false);
 
 //
 // TODO: 
-//  1. Implement logging.
-//  2. Websocket Heartbeat check.
-//  3. Error handling.
+//  1. Implement logging.           
+//  2. Websocket Heartbeat check.   DONE
+//  3. Error handling.              DONE
 // 
 
 // Environment
@@ -30,16 +30,22 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
     maxTableLen: maxLen,
   });
 
+  // Wrap BitMEXClient in Heartbeat class.
+  //
+  // The Heartbeat class extends event emitter and injects as 
+  //   depdendency an instance of BitMEXClient 
   const heartbeat = new Heartbeat(client);
+  const heartbeatClient = heartbeat.client;
 
-  // handle errors here. If no 'error' callback is attached. errors will crash the client.
-  client.on('error', function() {
-    console.log('Reconnecting now ...');
-    heartbeat.client.socket.reconnect();
+  heartbeatClient.on('error', function() {
+    console.log('Error received, closing connection.');
+    this.socket.instance.close();
   });
-  client.on('open', () => console.log('Connection opened.'));
-  client.on('close', () => console.log('Connection closed.'));
-  client.on('initialize', () => console.log('Client initialized, data is flowing.'));
+  heartbeatClient.on('end', () => console.log('Connection ended.'));
+  heartbeatClient.on('open', () => console.log('Connection opened.'));
+  heartbeatClient.on('close', (code) => console.log('Connection closed.'));
+  heartbeatClient.on('reconnect', () => console.log('Reconnecting ....'));
+  heartbeatClient.on('initialize', () => console.log('Client initialized, data is flowing.'));
 
   // Save trades to mongo
   saveTradeStream(client, stream);
@@ -111,12 +117,7 @@ function saveToDB(modelName, modelID, instance) {
 // 
 // Connects to database and then runs connectToBitMEX 
 //   function to start saving data from websocket,
-//   the connection will drop unexpectedly
-// 
-//   TODO: Implement heartbeat
-// 
-//   In the meantime, run several nodes in parallel to minimize/avoid data loss,
-//   the saveToDB function will check for ID to avoid duplication.
+//   the connection will drop unexpectedly heartbeat was implemented.
 // 
 // You can run this in parallel to bitmex_ws.js
 // This will save new incomming data using websocket and 
@@ -129,4 +130,3 @@ mongoose.connect(db_uri)
   .catch((err) => {
     console.log(err);
   });
-//connectToBitMEX()

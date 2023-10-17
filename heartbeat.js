@@ -3,16 +3,30 @@ const EventEmitter = require('events');
 //
 // Wrapper for BitMEXClient class.
 // 
-// Closes connection and emits an error to client when pong is not 
+// Emits an error to client when pong is not 
 //   received on time.
-// 
-// Set up a listener for error the main function, to reconnect
-// to websocket when an error event is sent.
 //
-//   e.g. Where heartbeatClient is an initialized client.
-//   
-//     heartbeatClient.on('error', function() {
-//       this.socket.reconnect();
+// Make sure your websocket object emits 'pong' when 
+//   pong data is received.
+// See method wsClient.onmessage ./lib/createSocket.js
+// 
+// You have to set up a listener for error the main function, 
+//   to reconnect to websocket when an error event is sent.
+//
+//   e.g. 
+//     client.on('error', function() {
+//       this.socket.instance.close();
+//     });
+//
+// When we close with no code the default behaviour is to reconnect.
+// The reconnect method from WebSocketClient will start.
+//
+//
+// Also add an 'end' event listener to avoid any errors from client
+// 
+//   e.g. 
+//     client.on('error', function() {
+//       this.socket.instance.close();
 //     });
 //
 class Heartbeat extends EventEmitter {
@@ -23,16 +37,14 @@ class Heartbeat extends EventEmitter {
     this.client.on('pong', this.pongListener.bind(this));
     this.client.on('message', this.messageListener.bind(this));
     this.client.on('open', this.ping);
-    this.timeout = this.startTimeout(20000);
   };
 
-  // Will close connection and emit an error to client 
+  // Will  emit an error to client 
   //   if no pong is received on time
   startTimeout(ms=20000) {
     return setTimeout(() => {
-      console.log('Timeout hit. Closing and emitting error ...');
+      console.log('Timeout hit. Emitting error ...');
       clearTimeout(this.ping);
-      this.socket.instance.close();
       this.client.emit('error')
     }, ms);
   }
@@ -49,7 +61,7 @@ class Heartbeat extends EventEmitter {
     console.info(`Received data: ${data}`);
     clearTimeout(this.timeout);
     this.timeout = this.startTimeout();
-    setTimeout(() => this.ping(), ms);
+    this.pingTimeout = setTimeout(() => this.ping(), ms);
   }
 
   // Handles any other message, resets error timeout and
