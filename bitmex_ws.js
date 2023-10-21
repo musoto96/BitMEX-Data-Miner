@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 const BitMEXClient = require('./BitMEX_client.js');
 const { Heartbeat } = require('./heartbeat.js');
 const Trade = require('./models/Trade.js');
+const { logger } = require('./logger.js');
 require('dotenv').config();
 mongoose.set('strictQuery', false);
 
 //
 // TODO: 
-//  1. Implement logging.           
+//  1. Implement logging.           DONE
 //  2. Websocket Heartbeat check.   DONE
 //  3. Error handling.              DONE
 // 
@@ -22,8 +23,8 @@ const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : proc
 const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
 
 //
-// Connects to BitMEX websocket and subscribes to a stream.
-// See 'options' reference in README
+// Connects to BitMEX websocket and starts a heartbeat with websocket.
+//  See README for options.
 //
 function connectToBitMEX(stream='trade', maxLen=1000) {
   const params = {
@@ -43,20 +44,20 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   const heartbeatClient = heartbeat.client;
 
   heartbeatClient.on('error', function() {
-    console.log('Error received, closing connection.');
+    logger.log({ level: 'error', title: 'Client error', message: 'Error received, closing connection.' });
     this.socket.instance.close();
   });
-  heartbeatClient.on('end', () => console.log('Connection ended.'));
-  heartbeatClient.on('open', () => console.log('Connection opened.'));
-  heartbeatClient.on('close', (code) => console.log('Connection closed.'));
-  heartbeatClient.on('reconnect', () => console.log('Reconnecting ....'));
-  heartbeatClient.on('initialize', () => console.log('Client initialized, data is flowing.'));
+  heartbeatClient.on('end', () => logger.log({ level: 'warn', title: 'Websocket warning', message: 'Connection ended.' }));
+  heartbeatClient.on('close', () => logger.log({ level: 'warn', title: 'Websocket warning', message: 'Connection closed.' }));
+  heartbeatClient.on('open', () => logger.log({ level: 'info',   title: 'Websocket info',  message: 'Connection opened.' }));
+  heartbeatClient.on('reconnect', () => logger.log({ level: 'info', title: 'Websocket info', message: 'Reconnecting ...' }));
+  heartbeatClient.on('initialize', () => logger.log({ level: 'info', title: 'Websocket info', message: 'Client initialized, data is flowing.' }));
 
   try {
     // Save trades to mongo
     openStream(client, symbol, stream, [saveToDB], [{ args: ["Trade", 'trdMatchID'] }]);
   } catch (err) {
-    console.log('Main call error\n', err);
+    logger.log({ level: 'error', title: 'Main call error', message: err });
   } 
 }
 
@@ -96,14 +97,15 @@ function openStream(client, symbol, stream, callbacks=[], callbacksArgs=[]) {
             try { 
               callback(newTrade, ...callbacksArgs[index].args);
             } catch (err) {
-              console.log(`Callback error on function: ${callback.name}`);
+              logger.log({ level: 'error', title: 'Callback error', message: `Error on function: ${callback.name}` });
             }
           });
         }
 
     });
 
-    console.log('New data length: ', newData.length);
+    logger.log({ level: 'max', title: 'Websocket Data', message: `New data: ${newData}` });
+    logger.log({ level: 'verbose', title: 'Websocket Data', message: `New data length: ${newData.length}` });
     oldData = args[0]
   });
 }
@@ -125,7 +127,7 @@ function openStream(client, symbol, stream, callbacks=[], callbacksArgs=[]) {
 // 
 function saveToDB(instance, modelName, modelID) {
   if (!usedb) {
-    console.log(`Env variable USEDB is ${usedb}. NOT saving to DB`);
+    logger.log({ level: 'max', title: 'MongoDB', message: `Env variable USEDB is ${usedb}. NOT saving to DB` });
     return;
   }
 
@@ -137,16 +139,14 @@ function saveToDB(instance, modelName, modelID) {
     mongoose.model(modelName)
       .find(query, (err, matches) => {
         if (err) {
-          console.log(`Object ID ${instance[modelID]} An error has ocurred:`);
-          console.log(err);
+          logger.log({ level: 'error', title: 'MongoDB', message: `Object ID ${instance[modelID]} An error has ocurred: ${err}` });
         } else {
           if (matches.length === 0) {
             instance.save()
-              .then((instance) => console.log(`Object with ID: ${instance[modelID]} saved to DB.`))
-              .catch(console.log);
+              .then((instance) => logger.log({ level: 'verbose', title: 'MongoDB', message: `Object with ID: ${instance[modelID]} saved to DB.` }))
+              .catch((err) => logger.log({ level: 'error', title: 'MongoDB', message: `Error saving object with ID: ${instance[modelID]} ${err}` }));
           } else {
-            console.log(err);
-            console.log(`Object with ID ${instance[modelID]} already exists. Skipping ... `);
+            logger.log({ level: 'verbose', title: 'MongoDB', message: `Object with ID ${instance[modelID]} already exists. Skipping ... ` });
           }
         }
       }).allowDiskUse();
@@ -168,9 +168,9 @@ if (usedb) {
       connectToBitMEX()
     })
     .catch((err) => {
-      console.log(err);
+      logger.log({ level: 'error', title: 'Client error', message: `Error connecting to BitMEX: ${err}` });
     });
 } else {
-  console.log(`Env variable USEDB is ${usedb}. NOT saving to DB`);
+  logger.log({ level: 'warn', title: 'MongoDB', message: `Env variable USEDB is ${usedb}. NOT saving to DB` });
   connectToBitMEX();
 }

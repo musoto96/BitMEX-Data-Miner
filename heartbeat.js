@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const { logger } = require('./logger.js');
 
 //
 // Wrapper for BitMEXClient class.
@@ -41,7 +42,7 @@ class Heartbeat extends EventEmitter {
   //   if no pong is received on time
   startTimeout(ms=20000) {
     return setTimeout(() => {
-      console.log('Timeout hit. Emitting error ...');
+      logger.log({ level: 'error', title: 'Heartbeat Error', message: 'Timeout hit. Emitting error ...' });
       clearTimeout(this.ping);
       this.client.emit('error')
     }, ms);
@@ -50,13 +51,13 @@ class Heartbeat extends EventEmitter {
   // Sends a ping to socket from client class.
   ping() {
     this.socket.send('ping');
-    console.info(`Sent ping`);
+    logger.log({ level: 'max', title: 'Heartbeat ping', message: 'Ping SENT' });
   }
 
   // Handles a pong message, resets error timeout and
   //   sets a timeout before next ping is sent
   pongListener(data, ms=5000) {
-    console.info(`Received data: ${data}`);
+    logger.log({ level: 'max', title: 'Heartbeat pong', message: `Received data: ${data}` });
     clearTimeout(this.timeout);
     this.timeout = this.startTimeout();
     this.pingTimeout = setTimeout(() => this.ping(), ms);
@@ -65,7 +66,7 @@ class Heartbeat extends EventEmitter {
   // Handles any other message, resets error timeout and
   //   sets a timeout before next ping is sent
   messageListener(data, ms=5000) {
-    console.info(`Received data: ${data}`);
+    logger.log({ level: 'max', title: 'Heartbeat data', message: `Received data: ${data}` });
     clearTimeout(this.timeout);
     this.timeout = this.startTimeout();
     setTimeout(() => this.ping(), ms);
