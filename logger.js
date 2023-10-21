@@ -7,6 +7,8 @@ const locale = process.env.LOCALE;
 
 //
 // The default logging levels
+//  only for reference, these
+//  are not used.
 //
 const defaultLevels = {
   error:   0,
@@ -20,6 +22,7 @@ const defaultLevels = {
 
 // 
 // Custom levels
+//  these will be used.
 // 
 const customLevels = {
   error:   0,
@@ -31,10 +34,12 @@ const customLevels = {
   max:     6
 };
 
+// Set the locale and timezone for logging
 const tzFormat = () => {
     return new Date().toLocaleString(locale, { timeZone: process.env.TZ });
 }
 
+// Create logger object
 const logger = createLogger({
   levels: customLevels,
   format: format.combine(
@@ -53,7 +58,11 @@ const logger = createLogger({
 });
 
 // 
-// Use CONSOLELOG env variable to log to console or only to files.
+// Set CONSOLELOG env variable to true to log to console 
+//   or set to false to only log to files.
+// 
+// Use CONSOLELVL env variable to select the log level to 
+//   log to the console if CONSOLELOG is set to true.
 // 
 if (consolelvl) {
   logger.add(
