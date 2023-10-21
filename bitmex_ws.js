@@ -15,6 +15,9 @@ mongoose.set('strictQuery', false);
 // Environment
 const testnet = (process.env.TESTNET === 'true');
 const symbol = process.env.SYMBOL;
+const key = process.env.KEY;
+const secret = process.env.SECRET;
+const usedb = (process.env.USEDB === 'true')
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
 const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
 
@@ -23,12 +26,14 @@ const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mo
 // See 'options' reference in README
 //
 function connectToBitMEX(stream='trade', maxLen=1000) {
-  const client = new BitMEXClient({
+  const params = {
     testnet: testnet,
-    //apiKeyID: process.env.KEY,
-    //apiKeySecret: process.env.SECRET,
     maxTableLen: maxLen,
-  });
+  };
+  // Inject credentials if we have any
+  if (key && secret) params = { apiKeyID: key, apiKeySecret: secret, ...params };
+
+  const client = new BitMEXClient(params);
 
   // Wrap BitMEXClient in Heartbeat class.
   //
@@ -48,7 +53,7 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   heartbeatClient.on('initialize', () => console.log('Client initialized, data is flowing.'));
 
   // Save trades to mongo
-  saveTradeStream(client, stream);
+  if (usedb) saveTradeStream(client, stream);
 }
 
 function saveTradeStream(client, stream) {
@@ -123,10 +128,15 @@ function saveToDB(modelName, modelID, instance) {
 // This will save new incomming data using websocket and 
 //   past data from REST API
 // 
-mongoose.connect(db_uri)
-  .then(() => { 
-    connectToBitMEX()
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+if (usedb) {
+  mongoose.connect(db_uri)
+    .then(() => { 
+      connectToBitMEX()
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+} else {
+  console.log(`Env variable USEDB is ${usedb} not saving to db`);
+  connectToBitMEX()
+}

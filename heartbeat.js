@@ -7,8 +7,8 @@ const EventEmitter = require('events');
 //   received on time.
 //
 // Make sure your websocket object emits 'pong' when 
-//   pong data is received.
-// See method wsClient.onmessage ./lib/createSocket.js
+//   pong data is received. See method wsClient.onmessage
+//   under ./lib/createSocket.js
 // 
 // You have to set up a listener for error the main function, 
 //   to reconnect to websocket when an error event is sent.
@@ -25,9 +25,7 @@ const EventEmitter = require('events');
 // Also add an 'end' event listener to avoid any errors from client
 // 
 //   e.g. 
-//     client.on('error', function() {
-//       this.socket.instance.close();
-//     });
+//     client.on('end', () => console.log("Connection ended"));
 //
 class Heartbeat extends EventEmitter {
   constructor(client) {
