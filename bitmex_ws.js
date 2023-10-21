@@ -14,9 +14,9 @@ mongoose.set('strictQuery', false);
 
 // Environment
 const testnet = (process.env.TESTNET === 'true');
-const symbol = process.env.SYMBOL;
 const key = process.env.KEY;
 const secret = process.env.SECRET;
+const symbol = process.env.SYMBOL;
 const usedb = (process.env.USEDB === 'true')
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
 const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
@@ -52,12 +52,31 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   heartbeatClient.on('reconnect', () => console.log('Reconnecting ....'));
   heartbeatClient.on('initialize', () => console.log('Client initialized, data is flowing.'));
 
-  // Save trades to mongo
-  if (usedb) saveTradeStream(client, stream);
+  try {
+    // Save trades to mongo
+    openStream(client, symbol, stream, [saveToDB], [{ args: ["Trade", 'trdMatchID'] }]);
+  } catch (err) {
+    console.log('Main call error\n', err);
+  } 
 }
 
-function saveTradeStream(client, stream) {
+//
+// Opens a stream and executes an arbitrary number of
+//   callbacks on the data.
+//
+//   The function takes the following arguments
+//      
+//      Parameter        Type
+//      -----------      ---------
+//       client           <obj>
+//       symbol           <string>
+//       stream           <string>
+//       callbacks        <array><function>
+//       callbacksArgs    <array><obj>
+//
+function openStream(client, symbol, stream, callbacks=[], callbacksArgs=[]) {
   let oldData = [];
+
   client.addStream(symbol, stream, (...args) => { 
     const streamData = args[0]
 
@@ -67,12 +86,24 @@ function saveTradeStream(client, stream) {
 
     newData.forEach((trade) => {
       const newTrade = new Trade(trade);
-      saveToDB("Trade", 'trdMatchID', newTrade);
+
+        // Execute arbitrary number of callbacks on the data
+        if (callbacks.length !== callbacksArgs.length) {
+          throw new Error('The length of callbacks array is not the same as the lenght of callbacksArgs array')
+        }
+        if (callbacks.length > 0) {
+          callbacks.forEach((callback, index) => {
+            try { 
+              callback(newTrade, ...callbacksArgs[index].args);
+            } catch (err) {
+              console.log(`Callback error on function: ${callback.name}`);
+            }
+          });
+        }
+
     });
 
-    //console.log('Stream data: ', streamData);
     console.log('New data length: ', newData.length);
-
     oldData = args[0]
   });
 }
@@ -92,10 +123,13 @@ function saveTradeStream(client, stream) {
 //    if none are found the data is saved, 
 //    if there is a match it is skipped.
 // 
-function saveToDB(modelName, modelID, instance) {
+function saveToDB(instance, modelName, modelID) {
+  if (!usedb) {
+    console.log(`Env variable USEDB is ${usedb}. NOT saving to DB`);
+    return;
+  }
+
   // Create query in advance
-  //   it will not work to put 
-  //   {modelID: instance[modelID]} inside find method.
   const query = {};
   query[modelID] = instance[modelID];
 
@@ -137,6 +171,6 @@ if (usedb) {
       console.log(err);
     });
 } else {
-  console.log(`Env variable USEDB is ${usedb} not saving to db`);
-  connectToBitMEX()
+  console.log(`Env variable USEDB is ${usedb}. NOT saving to DB`);
+  connectToBitMEX();
 }
