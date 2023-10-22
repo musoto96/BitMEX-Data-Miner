@@ -10,7 +10,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: mongo
       MONGO_INITDB_ROOT_PASSWORD: 12345
     volumes: 
-      - ./bitmex_db:/var/lib/mongo
+      - ./bitmex_db:/data/db
 
   mongo-express:
     image: mongo-express:0.54

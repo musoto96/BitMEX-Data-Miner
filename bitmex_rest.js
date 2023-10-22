@@ -13,6 +13,11 @@ const apiSecret = process.env.SECRET;
 // Create and make a request to BitMEX REST API
 //
 function makeRequest(verb, endpoint, data = {}) {
+  if (!apiKey || !apiSecret) { 
+    logger.log({ level: 'error', title: 'REST API', message: 'Missing API keys to make REST calls' });
+    return
+  }
+
   logger.log({ level: 'verbose', title: 'REST API', message: 'Request made' });
   const apiRoot = '/api/v1/';
   const expires = Math.round(new Date().getTime() / 1000) + 60; // 1 min in the future

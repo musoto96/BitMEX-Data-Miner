@@ -58,19 +58,16 @@ function openStream(client, callbacks=[], callbacksArgs=[]) {
 
     // Data level logging
     logger.log({ level: 'data', title: 'Websocket Data', message: `New data ${newData.map(obj => obj[dataDictionary[stream].log])}` });
-    logger.log({ level: 'data', title: 'Websocket Data', message: `New data length: ${newData.length}` });
+    logger.log({ level: 'info', title: 'Websocket Data', message: `New data length: ${newData.length}` });
     oldData = args[0]
   });
 }
 
-// Stream metadata
-const streamMetadata = dataDictionary[stream];
-
 //
 // Handle trade stream data, returns new trade objects.
 //
-function tradeStreamDataHandler(oldData, trade) {
-  return !oldData.some((oldTrade) => oldTrade[dataDictionary.trade.id] === trade[dataDictionary.trade.id]);
+function tradeStreamDataHandler(oldData, newTrade) {
+  return !oldData.some((oldTrade) => oldTrade[dataDictionary.trade.id] === newTrade[dataDictionary.trade.id]);
 }
 
-module.exports = { openStream, streamMetadata };
+module.exports = { openStream };

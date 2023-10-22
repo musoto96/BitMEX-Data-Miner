@@ -3,10 +3,15 @@ const { logger } = require('./logger.js');
 require('dotenv').config();
 mongoose.set('strictQuery', false);
 
+
 // Environment
 const usedb = (process.env.USEDB === 'true')
 const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
 const dbUri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+
+if (usedb) {
+  mongoose.connect(dbUri).then(logger.log({ level: 'info', title: 'MongoDB', message: `Connected to DB on: ${dbUri}` }));
+}
 
 // 
 // Saves data into the configured MONGODB database
@@ -36,7 +41,7 @@ function saveToDB(data, modelName, modelID) {
   const query = {};
   query[modelID] = instance[modelID];
 
-  setTimeout( () => {
+  setTimeout(() => {
     // Database check for ID and save
     mongoose.model(modelName)
       .find(query, (err, matches) => {
@@ -66,19 +71,14 @@ function saveToDB(data, modelName, modelID) {
 //       callback     <function>
 //       args         <args>
 // 
-function connectToDB(callback, ...args) {
-  mongoose.connect(dbUri)
-    .then(() => { 
-      // Open stream and save data to mongodb
-      try {
-        callback(...args);
-      } catch (err) {
-        logger.log({ level: 'error', title: 'Main call error', message: err });
-      } 
-    })
-    .catch((err) => {
-      logger.log({ level: 'error', title: 'Entrypoint error', message: `Error connecting: ${err}` });
-    });
+function executeOnDB(callback, ...args) {
+  try {
+    logger.log({ level: 'info', title: 'MongoDB', message: `Using DB: ${dbUri}` });
+    callback(...args);
+  } catch(err) {
+    logger.log({ level: 'error', title: 'Entrypoint error', message: `Error connectToDB: ${err}` });
+  };
+  logger.log({ level: 'info', title: 'Callback executed', message: `Executed: ${callback.name}` });
 }
 
-module.exports = { saveToDB, connectToDB }
+module.exports = { saveToDB, executeOnDB }
