@@ -73,6 +73,8 @@ const streamDictionary = {
   }, 
 }
 
+const streamMetadata = streamDictionary[stream]
+
 //
 // Handle trade stream data, returns new trade objects.
 //
@@ -80,4 +82,4 @@ function tradeStreamDataHandler(oldData, trade) {
   return !oldData.some((oldTrade) => oldTrade[streamDictionary.trade.id] === trade[streamDictionary.trade.id]);
 }
 
-module.exports = { openStream, streamDictionary, tradeStreamDataHandler };
+module.exports = { openStream, streamMetadata, tradeStreamDataHandler };
