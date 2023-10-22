@@ -17,7 +17,7 @@ const dbUri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mon
 //      -----------  ---------
 //       modelName    <string>
 //       modelID      <string>
-//       data         <data>
+//       data         <obj>
 // 
 //  It will check database for matching modelID 
 //    if none are found the data is saved, 
@@ -51,7 +51,7 @@ function saveToDB(data, modelName, modelID) {
           }
         }
       }).allowDiskUse();
-  }, 1 + Math.random());
+  }, 1 + Math.random()); // Add somee random time
 }
 
 // 
@@ -79,4 +79,4 @@ function connectToDB(callback, ...args) {
     });
 }
 
-module.exports = { saveToDB, connectToDB, dbUri }
+module.exports = { saveToDB, connectToDB }

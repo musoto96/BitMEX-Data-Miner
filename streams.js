@@ -82,4 +82,4 @@ function tradeStreamDataHandler(oldData, trade) {
   return !oldData.some((oldTrade) => oldTrade[streamDictionary.trade.id] === trade[streamDictionary.trade.id]);
 }
 
-module.exports = { openStream, streamMetadata, tradeStreamDataHandler };
+module.exports = { openStream, streamMetadata };
