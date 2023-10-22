@@ -1,10 +1,8 @@
-const mongoose = require('mongoose');
+const util = require('util');
 const BitMEXClient = require('./BitMEX_client.js');
 const { Heartbeat } = require('./heartbeat.js');
-const Trade = require('./models/Trade.js');
+const { saveToDB, dbUrl } = require('./database.js');
 const { logger } = require('./logger.js');
-require('dotenv').config();
-mongoose.set('strictQuery', false);
 
 //
 // TODO: 
@@ -17,16 +15,16 @@ mongoose.set('strictQuery', false);
 const testnet = (process.env.TESTNET === 'true');
 const key = process.env.KEY;
 const secret = process.env.SECRET;
-const symbol = process.env.SYMBOL;
+//
 const usedb = (process.env.USEDB === 'true')
-const mongoHost = (process.env.DEV == 'true' ? process.env.DEV_MONGO_HOST : process.env.MONGO_HOST );
-const db_uri = `mongodb://${process.env.DB_USER}:${process.env.DB_USER_PWD}@${mongoHost}:${process.env.MONGO_PORT}/${process.env.MONGO_DB}?authSource=admin&w=1`;
+const symbol = process.env.SYMBOL;
+const stream = process.env.STREAM;
 
 //
 // Connects to BitMEX websocket and starts a heartbeat with websocket.
 //  See README for options.
 //
-function connectToBitMEX(stream='trade', maxLen=1000) {
+function BitMEXHeartbeatClient(maxLen=1000) {
   const params = {
     testnet: testnet,
     maxTableLen: maxLen,
@@ -43,8 +41,8 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   const heartbeat = new Heartbeat(client);
   const heartbeatClient = heartbeat.client;
 
-  heartbeatClient.on('error', function() {
-    logger.log({ level: 'error', title: 'Client error', message: 'Error received, closing connection.' });
+  heartbeatClient.on('error', function(err) {
+    logger.log({ level: 'error', title: 'Client error', message: `Error received, closing connection: ${err}` });
     this.socket.instance.close();
   });
   heartbeatClient.on('end', () => logger.log({ level: 'warn', title: 'Websocket warning', message: 'Connection ended.' }));
@@ -53,13 +51,10 @@ function connectToBitMEX(stream='trade', maxLen=1000) {
   heartbeatClient.on('reconnect', () => logger.log({ level: 'info', title: 'Websocket info', message: 'Reconnecting ...' }));
   heartbeatClient.on('initialize', () => logger.log({ level: 'info', title: 'Websocket info', message: 'Client initialized, data is flowing.' }));
 
-  try {
-    // Save trades to mongo
-    openStream(client, symbol, stream, [saveToDB], [{ args: ["Trade", 'trdMatchID'] }]);
-  } catch (err) {
-    logger.log({ level: 'error', title: 'Main call error', message: err });
-  } 
+  return heartbeatClient;
 }
+
+module.exports = { BitMEXHeartbeatClient };
 
 //
 // Opens a stream and executes an arbitrary number of
@@ -81,21 +76,28 @@ function openStream(client, symbol, stream, callbacks=[], callbacksArgs=[]) {
   client.addStream(symbol, stream, (...args) => { 
     const streamData = args[0]
 
-    const newData = streamData.filter((trade) => {
-      return !oldData.some((oldTrade) => oldTrade.trdMatchID === trade.trdMatchID);
+    // Filter data depending on stream using a stream data handler
+    const newData = streamData.filter((obj) => {
+      switch (stream) {
+        case 'trade':
+          return tradeStreamDataHandler(oldData, obj);
+          break;
+        default:
+          logger.log({ level: 'error', title: 'Stream error', message: `No stream data handler for stream: ${stream}` });
+          throw new Error(`No stream data handler for stream: ${stream}`); 
+      }
     });
 
-    newData.forEach((trade) => {
-      const newTrade = new Trade(trade);
-
-        // Execute arbitrary number of callbacks on the data
+    // Execute arbitrary number of callbacks on the data
+    newData.forEach((obj) => {
         if (callbacks.length !== callbacksArgs.length) {
           throw new Error('The length of callbacks array is not the same as the lenght of callbacksArgs array')
         }
         if (callbacks.length > 0) {
           callbacks.forEach((callback, index) => {
             try { 
-              callback(newTrade, ...callbacksArgs[index].args);
+              // Inject data to callback arguments 
+              callback(obj, ...callbacksArgs[index].args);
             } catch (err) {
               logger.log({ level: 'error', title: 'Callback error', message: `Error on function: ${callback.name}` });
             }
@@ -104,57 +106,36 @@ function openStream(client, symbol, stream, callbacks=[], callbacksArgs=[]) {
 
     });
 
-    logger.log({ level: 'max', title: 'Websocket Data', message: `New data: ${newData}` });
-    logger.log({ level: 'verbose', title: 'Websocket Data', message: `New data length: ${newData.length}` });
+    // Data level logging
+    logger.log({ level: 'data', title: 'Websocket Data', message: `New data ${newData.map(obj => obj[streamDictionary[stream].log])}` });
+    logger.log({ level: 'data', title: 'Websocket Data', message: `New data length: ${newData.length}` });
     oldData = args[0]
   });
 }
 
-// 
-// Saves data into the configured MONGODB database
 //
-//   The function takes the following arguments
-//      
-//      Parameter    Type
-//      -----------  ---------
-//       modelName    <string>
-//       modelID      <string>
-//       instance     <modelName>
-// 
-//  It will check database for matching modelID 
-//    if none are found the data is saved, 
-//    if there is a match it is skipped.
-// 
-function saveToDB(instance, modelName, modelID) {
-  if (!usedb) {
-    logger.log({ level: 'max', title: 'MongoDB', message: `Env variable USEDB is ${usedb}. NOT saving to DB` });
-    return;
-  }
-
-  // Create query in advance
-  const query = {};
-  query[modelID] = instance[modelID];
-
-  setTimeout( () => {
-    mongoose.model(modelName)
-      .find(query, (err, matches) => {
-        if (err) {
-          logger.log({ level: 'error', title: 'MongoDB', message: `Object ID ${instance[modelID]} An error has ocurred: ${err}` });
-        } else {
-          if (matches.length === 0) {
-            instance.save()
-              .then((instance) => logger.log({ level: 'verbose', title: 'MongoDB', message: `Object with ID: ${instance[modelID]} saved to DB.` }))
-              .catch((err) => logger.log({ level: 'error', title: 'MongoDB', message: `Error saving object with ID: ${instance[modelID]} ${err}` }));
-          } else {
-            logger.log({ level: 'verbose', title: 'MongoDB', message: `Object with ID ${instance[modelID]} already exists. Skipping ... ` });
-          }
-        }
-      }).allowDiskUse();
-  }, 1 + Math.random());
+// Stream dictionary for DB and data handlers
+//
+const streamDictionary = {
+  trade: { 
+    id: 'trdMatchID',
+    modelName: 'Trade',
+    log: 'timestamp'
+  }, 
 }
 
+//
+// Handle trade stream data, returns new trade objects.
+//
+function tradeStreamDataHandler(oldData, trade) {
+  return !oldData.some((oldTrade) => oldTrade[streamDictionary.trade.id] === trade[streamDictionary.trade.id]);
+}
+
+
 // 
-// Connects to database and then runs connectToBitMEX 
+// This is the entrypoint, it is very ugly for now.
+// 
+// Connects to database and then runs connects to BitMEX
 //   function to start saving data from websocket,
 //   the connection will drop unexpectedly heartbeat was implemented.
 // 
@@ -163,14 +144,30 @@ function saveToDB(instance, modelName, modelID) {
 //   past data from REST API
 // 
 if (usedb) {
-  mongoose.connect(db_uri)
+  mongoose.connect(dbUri)
     .then(() => { 
-      connectToBitMEX()
+      const cllient = BitMEXHeartbeatClient()
+      // Open stream and save data to mongodb
+      try {
+        openStream(client, symbol, stream, [saveToDB], [
+          { args: 
+              [streamDictionary[stream].modelName, streamDictionary[stream].id] 
+          }
+        ]);
+      } catch (err) {
+        logger.log({ level: 'error', title: 'Main call error', message: err });
+      } 
     })
     .catch((err) => {
-      logger.log({ level: 'error', title: 'Client error', message: `Error connecting to BitMEX: ${err}` });
+      logger.log({ level: 'error', title: 'Entrypoint error', message: `Error connecting: ${err}` });
     });
 } else {
   logger.log({ level: 'warn', title: 'MongoDB', message: `Env variable USEDB is ${usedb}. NOT saving to DB` });
-  connectToBitMEX();
+  const client = BitMEXHeartbeatClient();
+  // Just open stream
+  try {
+    openStream(client, symbol, stream);
+  } catch (err) {
+    logger.log({ level: 'error', title: 'Main call error', message: err });
+  } 
 }

@@ -30,7 +30,7 @@ const customLevels = {
   info:    2,
   verbose: 3,
   debug:   4,
-  http:    5,
+  data:    5,
   max:     6
 };
 
@@ -50,7 +50,7 @@ const logger = createLogger({
     new transports.File({ filename: './logs/error.log',    level: 'error' }),
     new transports.File({ filename: './logs/warn.log',     level: 'warn' }),
     new transports.File({ filename: './logs/info.log',     level: 'info' }),
-    new transports.File({ filename: './logs/http.log',     level: 'http' }),
+    new transports.File({ filename: './logs/data.log',     level: 'data' }),
     new transports.File({ filename: './logs/verbose.log',  level: 'verbose' }),
     new transports.File({ filename: './logs/debug.log',    level: 'debug' }),
     new transports.File({ filename: './logs/max.log',      level: 'max' }),
@@ -87,6 +87,6 @@ if (require.main === module) {
   logger.log({ level: 'info',    title: 'Wrn log test',  message: 'Info' });
   logger.log({ level: 'verbose', title: 'Vrb log test',  message: 'Verbose' });
   logger.log({ level: 'debug',   title: 'Dbg log test',  message: 'Debug' });
-  logger.log({ level: 'http',    title: 'htt log test',  message: 'http' });
+  logger.log({ level: 'data',    title: 'Dat log test',  message: 'data' });
   logger.log({ level: 'max',     title: 'max log test',  message: 'max' });
 }

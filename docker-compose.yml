@@ -34,3 +34,4 @@ services:
       - mongo-express
     volumes:
      - ./dump:/mexmine/dump
+     - ./logs:/mexmine/logs
