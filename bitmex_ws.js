@@ -18,7 +18,7 @@ function BitMEXHeartbeatClient(maxLen=1000) {
     maxTableLen: maxLen,
   };
   // Inject credentials if we have any
-  if (key && secret) params = { apiKeyID: key, apiKeySecret: secret, ...params };
+  if (key && secret) Object.assign(params, { apiKeyID: key, apiKeySecret: secret });
 
   const client = new BitMEXClient(params);
 

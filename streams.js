@@ -1,4 +1,5 @@
 const { logger } = require('./logger.js');
+const { dataDictionary } = require('./apiHelper.js');
 require('dotenv').config();
 
 // Environment
@@ -56,30 +57,20 @@ function openStream(client, callbacks=[], callbacksArgs=[]) {
     });
 
     // Data level logging
-    logger.log({ level: 'data', title: 'Websocket Data', message: `New data ${newData.map(obj => obj[streamDictionary[stream].log])}` });
+    logger.log({ level: 'data', title: 'Websocket Data', message: `New data ${newData.map(obj => obj[dataDictionary[stream].log])}` });
     logger.log({ level: 'data', title: 'Websocket Data', message: `New data length: ${newData.length}` });
     oldData = args[0]
   });
 }
 
-//
-// Stream dictionary for DB and data handlers
-//
-const streamDictionary = {
-  trade: { 
-    id: 'trdMatchID',
-    modelName: 'Trade',
-    log: 'timestamp'
-  }, 
-}
-
-const streamMetadata = streamDictionary[stream]
+// Stream metadata
+const streamMetadata = dataDictionary[stream];
 
 //
 // Handle trade stream data, returns new trade objects.
 //
 function tradeStreamDataHandler(oldData, trade) {
-  return !oldData.some((oldTrade) => oldTrade[streamDictionary.trade.id] === trade[streamDictionary.trade.id]);
+  return !oldData.some((oldTrade) => oldTrade[dataDictionary.trade.id] === trade[dataDictionary.trade.id]);
 }
 
 module.exports = { openStream, streamMetadata };

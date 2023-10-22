@@ -19,10 +19,10 @@ Start the database and web gui with
 docker compose up -f mongo-docker-compose.yml up --build
 ```
 
-This will bring up a containers for _MongoDB_ and _Mongo-Express_, and now running the websocket with _nodeJS_ will connect to this _MongoDB_ container.
+This will bring up a containers for _MongoDB_ and _Mongo-Express_, and now running `index.js` with _nodeJS_ will connect to this _MongoDB_ container.
 ```
 npm install
-node bitmex_ws.js
+node index.js
 ```
 
 ### Basic usage
@@ -31,9 +31,9 @@ There are three main scripts
 
 | Script name         | What it does  |
 | -------------       | ------------- |
-| `bitmex_ws.js`      | Connects to BitMEX websocket and saves incomming data.  |
-| `bitmex_rest.js`    |  Makes requests to BitMEX REST API every 5 seconds and saves the data. It will request `page` number of pages of `pageSize` data points each.  |
-|  `cleaner.js`       |  This script is meant to be run periodically, it will remove any duplicates from database, it is specially usefull if running both `bitmex_ws.js` and `bitmex_rest.js` in parallel.
+| `bitmex_ws.js`      | Connects to BitMEX websocket and saves incomming data. **Entrypoint is index.js**  |
+| `bitmex_rest.js`    |  Makes requests to BitMEX REST API every 5 seconds and saves the data. It will request `pages` number of pages of `pageSize` data points each. **standalone**  |
+|  `cleaner.js`       |  This script is meant to be run periodically, it will remove any duplicates from database, it is specially usefull if running both `bitmex_ws.js` and `bitmex_rest.js` in parallel. **standalone** |
 
 
 For some more information consult the inline comments inside the scripts.

@@ -37,6 +37,7 @@ function saveToDB(data, modelName, modelID) {
   query[modelID] = instance[modelID];
 
   setTimeout( () => {
+    // Database check for ID and save
     mongoose.model(modelName)
       .find(query, (err, matches) => {
         if (err) {
@@ -51,6 +52,7 @@ function saveToDB(data, modelName, modelID) {
           }
         }
       }).allowDiskUse();
+
   }, 1 + Math.random()); // Add somee random time
 }
 

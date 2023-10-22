@@ -19,9 +19,9 @@ const usedb = (process.env.USEDB === 'true');
   const client = BitMEXHeartbeatClient();
 
   //
-  // Enter a callback function to execute on the data received from Websocket,
-  //   if a function takes no arguments, pass an empty array to it [],
-  //   the number of callbacks and number of callbackArgs have to match.
+  // Execute an array of callbacks on the data received from Websocket,
+  //   if a function takes no arguments, pass an object with empty args array
+  //   { args: [] } the number of callbacks and number of callbackArgs have to match.
   //
 
   // These arrays will be used when usedb=true
@@ -33,12 +33,12 @@ const usedb = (process.env.USEDB === 'true');
   const callbackArgsArray = [{ args: [] }];
 
 
-  // View environment variable USEDB
+  // Connect to DB, open stream, execute callbacks
   if (usedb) {
     connectToDB(openStream, client, dbCallbackArray, dbCallbackArgsArray);
   } else {
     logger.log({ level: 'warn', title: 'MongoDB', message: `Env variable USEDB is ${usedb}. NOT saving to DB` });
-    // Just open stream
+    // Open stream and execute callbacks
     try {
       openStream(client, callbackArray, callbackArgsArray);
     } catch (err) {
