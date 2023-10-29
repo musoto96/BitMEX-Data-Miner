@@ -2,7 +2,7 @@ const { BitMEXHeartbeatClient } = require('./bitmex_ws.js');
 const { openStream } = require('./streams.js');
 const { dataDictionary, metadata } = require('./apiHelper.js');
 const { executeOnDB, saveToDB } = require('./database.js');
-const { restExtractData } = require('./extract.js');
+const { restExtractData } = require('./requests.js');
 const { logger } = require('./logger.js');
 require('dotenv').config();
 

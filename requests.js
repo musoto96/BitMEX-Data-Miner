@@ -2,7 +2,7 @@ const { makeRequest } = require('./bitmex_rest.js');
 const { saveToDB } = require('./database.js');
 const { logger } = require('./logger.js');
 const { dataDictionary } = require('./apiHelper.js');
-require('dotenv').config()
+require('dotenv').config();
 
 // Environment
 const symbol = process.env.SYMBOL;
@@ -60,21 +60,3 @@ function restExtractData(modelName, modelID, pageSize, pages, offset) {
 }
 
 module.exports = { restExtractData };
-
-// 
-// Connects to database and then runs extract 
-//   function to start saving data from REST API.
-// 
-// You can run this in parallel to bitmex_ws.js
-//   in order to save new incomming data using websocket 
-//   as well as previous data from REST API
-// 
-/*
-mongoose.connect(db_uri).then(() => {
-  logger.log({ level: 'info', title: 'MongoDB', message: 'REST API Connected to mongoDB' });
-  extract(dataDictionary[dataEndpoint].modelName, dataDictionary[dataEndpoint].id, 1000, 1000, 0);
-}).catch((err) => {
-  logger.log({ level: 'err', title: 'MongoDB', message: `REST API error connecting to DB: ${error}` });
-  mongoose.disconnect();
-});
-*/

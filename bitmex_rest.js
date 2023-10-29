@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const crypto = require('crypto');
 const qs = require('qs');
 const { logger } = require('./logger.js');
-require('dotenv').config()
+require('dotenv').config();
 
 // Environment
 const testnet = (process.env.TESTNET === 'true');
